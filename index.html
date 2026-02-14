@@ -503,9 +503,6 @@
           .header-left-group {
               gap: 8px;
           }
-          .cart-container {
-              margin-right: 5px;
-          }
           /* تعديل القائمة المنسدلة للموبايل */
           .user-dropdown {
               width: 180px;
@@ -553,7 +550,7 @@
           top: 20px;
           left: 50%;
           transform: translateX(-50%);
-          z-index: 9999;
+          z-index: 20000; /* 🔥🔥 أعلى من السلة (10005) 🔥🔥 */
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -644,6 +641,83 @@
       .visitor-login-btn:hover {
           background: #e5e7eb;
           color: #1f2937;
+      }
+
+      /* ========================================================== */
+      /* 🔥🔥🔥 إصلاح هيكلية السلة للموبايل (Flexbox Layout) 🔥🔥🔥 */
+      /* ========================================================== */
+      #cartSlider_v2 {
+          /* 🔥 تعديل مهم: Z-Index عالي جداً ليغطي الهيدر */
+          z-index: 10005 !important;
+          
+          display: flex;
+          flex-direction: column;
+          height: 100vh; /* Full viewport height */
+          max-height: 100vh;
+          overflow: hidden; /* Prevent body scroll bleed */
+      }
+      
+      /* 🔥 تعديل مهم: Z-Index عالي جداً للطبقة الشفافة */
+      .cart-overlay {
+          z-index: 10004 !important;
+      }
+
+      .cartSlider-header {
+          flex-shrink: 0; /* Header stays fixed size */
+          z-index: 20;
+          position: relative;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+          /* Flex to align items including back button */
+          display: flex;
+          align-items: center;
+      }
+      
+      /* New Back Button Style */
+      #cartBackBtn {
+          font-size: 1.5em;
+          color: #555;
+          cursor: pointer;
+          padding: 0 10px;
+          transition: color 0.2s;
+      }
+      #cartBackBtn:hover {
+          color: #e65100;
+      }
+
+      /* The scrollable middle part */
+      .cart-scroll-content {
+          flex: 1; /* Takes all remaining space */
+          overflow-y: auto; /* Enable vertical scrolling */
+          padding: 15px;
+          -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+      }
+
+      /* Fixed footer at the bottom */
+      .cart-footer-fixed {
+          flex-shrink: 0; /* Footer stays fixed size */
+          background: white;
+          border-top: 1px solid #eee;
+          padding: 15px;
+          box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+          z-index: 20;
+      }
+      
+      /* 🔥 أنيميشن بسيط للتنقل بين الخطوات */
+      .fade-in {
+          animation: fadeInForm 0.3s ease-out;
+      }
+      
+      @keyframes fadeInForm {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Mobile adjustment for cart width */
+      @media (max-width: 480px) {
+          .cartSlider {
+              width: 100%;
+              max-width: 100%;
+          }
       }
 
   </style>
@@ -804,64 +878,79 @@
   </div>
 </section>
 
-<!-- السلة الجانبية -->
+<!-- السلة الجانبية - 🔥🔥🔥 الهيكل الجديد 🔥🔥🔥 -->
 <div class="cartSlider" id="cartSlider_v2">
+  
+  <!-- 1. الرأس الثابت -->
   <div class="cartSlider-header">
-    <h3>سلة الطلبات</h3>
+    <!-- 🔥 زر الرجوع الجديد 🔥 -->
+    <span id="cartBackBtn" style="display:none; margin-left: 15px;">➜</span>
+    <h3 style="flex:1;">سلة الطلبات</h3>
     <span class="cartSlider-close" id="closeCart_v2">&times;</span>
   </div>
 
-  <div class="cartSlider-items" id="cartItems_v2">
-    <p class="empty-cart">السلة فارغة حاليا</p>
+  <!-- 2. الجزء القابل للتمرير (يحتوي العناصر + الفورم + الخصم) -->
+  <div class="cart-scroll-content">
+      
+      <!-- 🔥 الخطوة 1: عرض المنتجات 🔥 -->
+      <div id="cartStep1" class="fade-in">
+          <div class="cartSlider-items" id="cartItems_v2">
+            <p class="empty-cart">السلة فارغة حاليا</p>
+          </div>
+          
+          <div class="cartSlider-discount">
+            <label>كود الخصم (يتطلب تسجيل دخول بجوجل):</label>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="discountCode_v2" placeholder="ادخل الكود" style="flex:1;">
+                <button id="applyDiscountBtn_v2">تطبيق</button>
+            </div>
+            <p id="discountMessage_v2" style="margin-top: 5px; font-size: 0.9em;"></p>
+          </div>
+      </div>
+
+      <!-- 🔥 الخطوة 2: فورم البيانات (مخفي افتراضياً) 🔥 -->
+      <div id="customerFormSection" class="fade-in" style="display:none; padding: 0 5px;">
+            <div class="cart-section-title">بيانات العميل (مطلوبة)</div>
+            <input type="text" id="customerName" class="cart-input" placeholder="الاسم الكريم" required>
+            <input type="tel" id="customerPhone" class="cart-input" placeholder="رقم الجوال (05xxxxxxxx)" required>
+
+            <div class="cart-section-title">خيارات الطلب</div>
+            <label style="font-size:12px; font-weight:bold;">طريقة الاستلام:</label>
+            <select id="deliveryMethod_v2" class="cart-input">
+            <option value="استلام من الفرع">استلام من الفرع</option>
+            <option value="توصيل">توصيل (رسوم 15 ر.س)</option>
+            <option value="تسليم إلى السيارة">تسليم إلى السيارة</option>
+            </select>
+
+            <div id="deliveryFields" class="dynamic-fields" style="display:none;">
+            <label style="font-size:12px; font-weight:bold;">العنوان بالتفصيل:</label>
+            <input type="text" id="addressDetail" class="cart-input" placeholder="الحي، الشارع، رقم المنزل">
+            <label style="font-size:12px; font-weight:bold;">علامة مميزة:</label>
+            <input type="text" id="landmark" class="cart-input" placeholder="بجوار مسجد/مدرسة...">
+            </div>
+
+            <div id="carFields" class="dynamic-fields" style="display:none;">
+            <label style="font-size:12px; font-weight:bold;">نوع السيارة:</label>
+            <input type="text" id="carType" class="cart-input" placeholder="مثال: تويوتا كامري">
+            <label style="font-size:12px; font-weight:bold;">لوحة السيارة:</label>
+            <input type="text" id="carPlate" class="cart-input" placeholder="مثال: أ ب ج 1234">
+            </div>
+
+            <label style="font-size:12px; font-weight:bold;">طريقة الدفع:</label>
+            <select id="paymentMethod_v2" class="cart-input">
+            <option value="كاش">كاش (عند الاستلام)</option>
+            <option value="شبكة">شبكة (مدى/فيزا)</option>
+            </select>
+      </div>
+
   </div>
 
-  <div class="cartSlider-options" style="padding: 0 15px;">
-    <div class="cart-section-title">بيانات العميل (مطلوبة)</div>
-    <input type="text" id="customerName" class="cart-input" placeholder="الاسم الكريم" required>
-    <input type="tel" id="customerPhone" class="cart-input" placeholder="رقم الجوال (05xxxxxxxx)" required>
-
-    <div class="cart-section-title">خيارات الطلب</div>
-    <label style="font-size:12px; font-weight:bold;">طريقة الاستلام:</label>
-    <select id="deliveryMethod_v2" class="cart-input">
-      <option value="استلام من الفرع">استلام من الفرع</option>
-      <option value="توصيل">توصيل (رسوم 15 ر.س)</option>
-      <option value="تسليم إلى السيارة">تسليم إلى السيارة</option>
-    </select>
-
-    <div id="deliveryFields" class="dynamic-fields" style="display:none;">
-      <label style="font-size:12px; font-weight:bold;">العنوان بالتفصيل:</label>
-      <input type="text" id="addressDetail" class="cart-input" placeholder="الحي، الشارع، رقم المنزل">
-      <label style="font-size:12px; font-weight:bold;">علامة مميزة:</label>
-      <input type="text" id="landmark" class="cart-input" placeholder="بجوار مسجد/مدرسة...">
-    </div>
-
-    <div id="carFields" class="dynamic-fields" style="display:none;">
-      <label style="font-size:12px; font-weight:bold;">نوع السيارة:</label>
-      <input type="text" id="carType" class="cart-input" placeholder="مثال: تويوتا كامري">
-      <label style="font-size:12px; font-weight:bold;">لوحة السيارة:</label>
-      <input type="text" id="carPlate" class="cart-input" placeholder="مثال: أ ب ج 1234">
-    </div>
-
-    <label style="font-size:12px; font-weight:bold;">طريقة الدفع:</label>
-    <select id="paymentMethod_v2" class="cart-input">
-      <option value="كاش">كاش (عند الاستلام)</option>
-      <option value="شبكة">شبكة (مدى/فيزا)</option>
-    </select>
+  <!-- 3. التذييل الثابت (الإجمالي وزر الإرسال) -->
+  <div class="cart-footer-fixed">
+      <div class="cartSlider-total" id="cartTotal_v2">المجموع: 0 ريال</div>
+      <!-- تم إضافة type="button" لمنع إعادة تحميل الصفحة -->
+      <button type="button" class="cartSlider-send" id="sendOrder_v2">إكمال الطلب</button>
   </div>
-
-  <div class="cartSlider-discount">
-    <label>كود الخصم (يتطلب تسجيل دخول بجوجل):</label>
-    <div style="display:flex; gap:5px;">
-        <input type="text" id="discountCode_v2" placeholder="ادخل الكود" style="flex:1;">
-        <button id="applyDiscountBtn_v2">تطبيق</button>
-    </div>
-    <p id="discountMessage_v2" style="margin-top: 5px; font-size: 0.9em;"></p>
-  </div>
-
-  <div class="cartSlider-total" id="cartTotal_v2">المجموع: 0 ريال</div>
-
-  <!-- تم إضافة type="button" لمنع إعادة تحميل الصفحة -->
-  <button type="button" class="cartSlider-send" id="sendOrder_v2">إرسال الطلب</button>
 </div>
 
 <!-- نافذة تتبع الطلب (Modal) -->
@@ -1028,6 +1117,7 @@
   const deliveryFee = 15;
   let appliedDiscount = 0;
   let appliedCodeName = "";
+  let isFormVisible = false; // 🔥 متغير لتتبع حالة الفورم
   
   const categoryMap = {'وجبات رمضان': 'ramadan', 'دجاج':'chicken','لحم':'meat','رز':'rice','طلبات جانبية':'sides','المشروبات':'drinks'};
 
@@ -1871,11 +1961,14 @@
       const countEl = document.querySelector('.cart-count');
       const totalEl = document.getElementById('cartTotal_v2');
       const deliverySelect = document.getElementById('deliveryMethod_v2');
+      
       container.innerHTML = '';
       let subtotal = 0;
       let totalQty = 0;
 
-      if (cartItems.length === 0) { container.innerHTML = '<p class="empty-cart">السلة فارغة حاليا</p>'; } 
+      if (cartItems.length === 0) { 
+          container.innerHTML = '<p class="empty-cart">السلة فارغة حاليا</p>';
+      } 
       else {
           cartItems.forEach((item, idx) => {
               const itemTotal = item.price * item.qty;
@@ -1906,11 +1999,52 @@
   
   const cartSlider = document.getElementById('cartSlider_v2');
   const overlay = document.createElement('div'); overlay.className = 'cart-overlay'; document.body.appendChild(overlay);
-  function openCart() { cartSlider.classList.add('open'); overlay.classList.add('show'); }
+  
+  function openCart() { 
+      cartSlider.classList.add('open'); 
+      overlay.classList.add('show');
+      
+      // إعادة تعيين الحالة للخطوة الأولى دائماً عند فتح السلة
+      if (isFormVisible) {
+          isFormVisible = false;
+          updateFormVisibility();
+      }
+  }
+  
   function closeCart() { cartSlider.classList.remove('open'); overlay.classList.remove('show'); }
   document.querySelector('.cart-container').addEventListener('click', openCart);
   document.getElementById('closeCart_v2').addEventListener('click', closeCart);
   overlay.addEventListener('click', closeCart);
+
+  // --- 🔥 منطق إظهار/إخفاء الفورم (نظام الخطوات) 🔥 ---
+  const formSection = document.getElementById('customerFormSection');
+  const cartStep1 = document.getElementById('cartStep1'); // قسم المنتجات
+  const sendBtn = document.getElementById('sendOrder_v2');
+  const backBtn = document.getElementById('cartBackBtn'); // زر الرجوع
+
+  function updateFormVisibility() {
+      if (isFormVisible) {
+          // عرض الفورم، إخفاء المنتجات
+          cartStep1.style.display = 'none';
+          formSection.style.display = 'block';
+          backBtn.style.display = 'block';
+          sendBtn.innerText = "إرسال الطلب";
+      } else {
+          // عرض المنتجات، إخفاء الفورم
+          cartStep1.style.display = 'block';
+          formSection.style.display = 'none';
+          backBtn.style.display = 'none';
+          sendBtn.innerText = "إكمال الطلب";
+      }
+  }
+
+  // تفعيل زر الرجوع
+  if(backBtn) {
+      backBtn.addEventListener('click', () => {
+          isFormVisible = false;
+          updateFormVisibility();
+      });
+  }
 
   document.getElementById('deliveryMethod_v2').addEventListener('change', (e) => {
       const val = e.target.value;
@@ -2003,21 +2137,27 @@
   document.getElementById('sendOrder_v2').addEventListener('click', async (e) => {
       e.preventDefault(); 
       
+      if (cartItems.length === 0) return showNotification("السلة فارغة!", 'warning');
+
+      // 🔥 الخطوة 1: إذا كان الفورم مخفي، نظهره فقط ولا نرسل 🔥
+      if (!isFormVisible) {
+          isFormVisible = true;
+          updateFormVisibility();
+          return;
+      }
+      
+      // 🔥 الخطوة 2: إذا كان الفورم ظاهر، نقوم بالتحقق والإرسال 🔥
+
       // 🔥 التحقق من تسجيل الدخول قبل أي شيء 🔥
       if (!currentUser) {
-          // فتح نافذة تسجيل الدخول بدلاً من التنبيه
           if(loginModal) loginModal.style.display = 'flex';
           return;
       }
-
-      if (cartItems.length === 0) return showNotification("السلة فارغة!", 'warning');
       
       // 🔥🔥 التحقق من كمية وجبات رمضان 🔥🔥
-      // حساب إجمالي عدد الوجبات الرمضانية في السلة
       const ramadanItems = cartItems.filter(i => i.category === 'ramadan' || i.category === 'وجبات رمضان');
       const totalRamadanQty = ramadanItems.reduce((sum, i) => sum + i.qty, 0);
 
-      // الشرط: إذا كان هناك أي وجبة رمضانية، يجب أن يكون المجموع الكلي لها 10 أو أكثر
       if (totalRamadanQty > 0 && totalRamadanQty < 10) {
           return showNotification("عذراً، الطلب من قسم وجبات رمضان يتطلب 10 وجبات على الأقل (يمكنك التنويع بين وجبات رمضان المختلفة)", 'warning');
       }
@@ -2073,6 +2213,10 @@
       const ksaDateString = now.toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true });
 
       try {
+          // تغيير نص الزر أثناء الإرسال
+          sendBtn.innerText = "جاري الإرسال...";
+          sendBtn.disabled = true;
+
           const orderData = {
               itemsString: itemsDetailsForDb, 
               items: itemsFormatted, // 🔥 New structured array for admin panel
@@ -2108,6 +2252,11 @@
           cartItems = [];
           updateCartUI();
           
+          // إعادة تعيين حالة الفورم
+          isFormVisible = false;
+          updateFormVisibility();
+          sendBtn.disabled = false;
+
           closeCart();
 
           openRatingModal();
@@ -2115,6 +2264,8 @@
       } catch(err) { 
           console.error("Error", err); 
           showNotification("حدث خطأ أثناء إرسال الطلب، الرجاء المحاولة مرة أخرى.", 'error');
+          sendBtn.disabled = false;
+          sendBtn.innerText = "إرسال الطلب";
       }
   });
 
