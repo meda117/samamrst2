@@ -776,6 +776,52 @@
           }
       }
 
+      /* --- 🔥 تنسيقات زر تتبع الطلب العائم الجديد 🔥 --- */
+      .floating-track-btn {
+          position: fixed;
+          bottom: 20px;
+          left: 20px;
+          background: linear-gradient(135deg, #e65100, #bf360c);
+          color: white;
+          padding: 12px 25px;
+          border-radius: 50px;
+          font-weight: bold;
+          box-shadow: 0 5px 20px rgba(230, 81, 0, 0.4);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          z-index: 9000; /* طبقة عالية لتظهر فوق المحتوى */
+          border: 2px solid rgba(255,255,255,0.2);
+          transition: transform 0.3s, box-shadow 0.3s;
+          text-decoration: none;
+      }
+      
+      .floating-track-btn:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 8px 25px rgba(230, 81, 0, 0.6);
+      }
+      
+      .floating-track-btn .icon {
+          font-size: 18px;
+          animation: truckMove 2s infinite ease-in-out;
+      }
+      
+      @keyframes truckMove {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(3px); }
+      }
+      
+      /* تحسين للموبايل */
+      @media (max-width: 480px) {
+          .floating-track-btn {
+              padding: 10px 20px;
+              font-size: 13px;
+              bottom: 15px;
+              left: 15px;
+          }
+      }
+
   </style>
 </head>
 <body>
@@ -822,6 +868,7 @@
       <nav class="mobile-menu" id="mobileMenu">
         <ul>
           <li><a href="#" onclick="window.scrollTo(0,0); return false;">الرئيسية</a></li>
+          <!-- تم الإبقاء على رابط القائمة أيضاً للوصول من مكانين -->
           <li><a href="#" id="openTrackModalBtn" style="color: #fdf2d4; font-weight: bold;">تتبع طلبك 🚚</a></li>
           <li><a href="#" id="toggleAboutBtn">من نحن</a></li>
           <li><a href="#menu">قائمة الطعام</a></li>
@@ -1134,6 +1181,12 @@
     <p>© 2025 صمّام. جميع الحقوق محفوظة.</p>
   </div>
 </footer>
+
+<!-- 🔥 زر التتبع العائم الجديد 🔥 -->
+<button id="floatingTrackBtn" class="floating-track-btn" title="تتبع حالة طلبك">
+    <span class="icon">🚚</span>
+    <span class="text">تتبع طلبك</span>
+</button>
 
 <div id="ad-overlay" style="display:none;"><div class="ad-box"><button class="close-ad">×</button><div class="ad-image-wrapper"><img id="popup-ad-img" src="" alt="إعلان" /><a href="https://wa.me/966592372549" target="_blank" class="ad-btn">اضغط هنا</a></div></div></div>
 
@@ -2357,6 +2410,16 @@
           mobileMenu.classList.remove('open');
       });
   }
+  
+  // 🔥 إضافة مستمع للزر العائم الجديد لفتح النافذة أيضاً 🔥
+  const floatingTrackBtn = document.getElementById('floatingTrackBtn');
+  if(floatingTrackBtn) {
+      floatingTrackBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          trackModal.style.display = 'flex';
+      });
+  }
+
   if(closeTrackBtn) {
       closeTrackBtn.addEventListener('click', () => { trackModal.style.display = 'none'; });
   }
