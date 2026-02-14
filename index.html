@@ -136,16 +136,20 @@
       
       button.add-to-cart:disabled { background-color: #ccc !important; cursor: not-allowed; opacity: 0.6; }
 
-      /* --- رابط التفاصيل الجديد --- */
+      /* --- رابط التفاصيل الجديد (تعديل الريسبونسف) --- */
       .details-link {
           display: block;
           text-align: center;
           color: #e65100;
           font-size: 13px;
           font-weight: bold;
-          margin: 10px 0;
+          margin: 10px auto;
           cursor: pointer;
           text-decoration: underline;
+          width: 95%; /* ضمان عدم ملامسة الحواف */
+          white-space: normal; /* السماح بنزول النص لسطر جديد */
+          line-height: 1.5; /* تحسين المسافة بين الأسطر */
+          overflow-wrap: break-word; /* كسر الكلمات الطويلة */
       }
       .details-link:hover { color: #bf360c; }
       
@@ -166,9 +170,11 @@
       img[src=""] { display: none; }
 
       /* --- تنسيقات النوافذ المنبثقة (Modal) --- */
+      /* 🔥 تعديل هام: رفع الـ z-index ليغطي الهيدر */
       .track-modal-overlay, .profile-modal-overlay, .rating-modal-overlay, .meal-modal-overlay, .login-modal-overlay {
           position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-          background: rgba(0,0,0,0.5); z-index: 3000;
+          background: rgba(0,0,0,0.5); 
+          z-index: 11000 !important; /* أعلى من الهيدر (2000) والسلة (10005) */
           display: none; align-items: center; justify-content: center;
           backdrop-filter: blur(5px);
       }
@@ -182,14 +188,23 @@
           text-align: center;
       }
 
-      /* --- 🔥 تنسيقات شيك جداً لنافذة تفاصيل الوجبة 🔥 --- */
-      .meal-modal { padding: 0; overflow: hidden; border: none; }
+      /* --- 🔥 تنسيقات شيك جداً ومحسنة لنافذة تفاصيل الوجبة (Flexbox Layout) 🔥 --- */
+      .meal-modal { 
+          padding: 0; 
+          border: none;
+          /* تحويل النافذة لـ Flexbox */
+          display: flex !important; /* فرض الفليكس */
+          flex-direction: column;
+          overflow: hidden; /* إخفاء أي تجاوز خارجي */
+          max-height: 85vh; /* أقصى ارتفاع 85% من الشاشة */
+      }
       
       .meal-modal-img-container {
           width: 100%;
-          height: 280px;
+          height: 250px; /* ارتفاع ثابت افتراضي */
           overflow: hidden;
           position: relative;
+          flex-shrink: 0; /* منع الصورة من الانكماش */
       }
       .meal-modal img {
           width: 100%;
@@ -207,8 +222,11 @@
       }
 
       .meal-modal-body { 
-          padding: 20px 25px 25px 25px; 
+          padding: 20px 25px; 
           text-align: right; 
+          /* 🔥 جعل المحتوى هو الجزء القابل للتمرير فقط */
+          overflow-y: auto;
+          flex: 1; /* يأخذ المساحة المتبقية */
       }
       
       .meal-ramadan-tag {
@@ -271,6 +289,7 @@
           justify-content: space-between;
           align-items: center;
           border-top: 1px solid #ddd;
+          flex-shrink: 0; /* منع الفوتر من الانكماش */
       }
       .meal-price-label { 
           font-size: 18px; 
@@ -283,6 +302,20 @@
           color: #000; /* سعر أسود وواضح */
       }
       .meal-price-value span { font-size: 16px; margin-right: 4px; }
+
+      /* 🔥 تحسينات الموبايل لنافذة الوجبة 🔥 */
+      @media (max-width: 480px) {
+          .meal-modal-img-container {
+              height: 180px; /* تصغير الصورة على الموبايل لتوفير مساحة */
+          }
+          .meal-modal-title {
+              font-size: 22px;
+              margin-bottom: 15px;
+          }
+          .meal-modal-body {
+              padding: 15px 20px;
+          }
+      }
 
       .track-modal h3, .profile-modal h3, .rating-modal h3, .login-modal h3 { 
           margin-top: 0; color: #333; text-align: center; margin-bottom: 20px; 
@@ -650,12 +683,34 @@
       #cartSlider_v2 {
           /* 🔥 تعديل مهم: Z-Index عالي جداً ليغطي الهيدر */
           z-index: 10005 !important;
+          position: fixed !important; /* Ensure fixed */
+          top: 0;
+          right: -100%; /* Hide completely off-screen by default */
+          width: 350px;
+          max-width: 100%; /* Allow full width on mobile if needed */
+          background: white;
+          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           
           display: flex;
           flex-direction: column;
           height: 100vh; /* Full viewport height */
           max-height: 100vh;
           overflow: hidden; /* Prevent body scroll bleed */
+          box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+      }
+      
+      #cartSlider_v2.open {
+          right: 0 !important;
+      }
+
+      @media (max-width: 480px) {
+          #cartSlider_v2 {
+              width: 100%;
+              right: -100% !important; /* Ensure hidden on load for mobile */
+          }
+          #cartSlider_v2.open {
+              right: 0 !important;
+          }
       }
       
       /* 🔥 تعديل مهم: Z-Index عالي جداً للطبقة الشفافة */
@@ -1516,7 +1571,8 @@
               // وإلا نستخدم sizes كخطة بديلة (للتوافق القديم)
               let variantsData = (item.variants && item.variants.length > 0) ? item.variants : (item.sizes || []);
               
-              if ((catKey === 'ramadan' || catKey === 'وجبات رمضان') && variantsData.length > 0) {
+              // 🔥 التعديل هنا: إضافة شرط isMeal للتأكد أن هذا الشكل الخاص يظهر فقط للوجبات وليس للأصناف العادية
+              if (isMeal && (catKey === 'ramadan' || catKey === 'وجبات رمضان') && variantsData.length > 0) {
                   // في رمضان، نلغي أزرار الأحجام العادية ونستخدم Select
                   sizesHTML = ''; 
                   
