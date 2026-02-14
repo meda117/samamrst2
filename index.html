@@ -1494,7 +1494,10 @@
             const container = document.getElementById(containerId);
             
             if (container) {
-              const isMeal = item.isMeal === true || catKey === 'وجبات رمضان' || item.type === 'meal';
+              // 🔥🔥 تم تعديل هذا السطر لحل مشكلتك 🔥🔥
+              // تم إزالة شرط (catKey === 'وجبات رمضان') من تعريف الوجبة
+              // الآن يعتمد فقط على الداتا القادمة من قاعدة البيانات
+              const isMeal = item.isMeal === true || item.type === 'meal';
 
               let sizesHTML = '';
               let basePrice = item.price || 0;
@@ -1569,7 +1572,7 @@
                   } else if (item.riceOption) {
                       mealBadges += `<span class="rice-status-badge">${item.riceOption}</span>`;
                   } else {
-                       mealBadges += `<span class="rice-status-badge">مع الرز</span>`;
+                        mealBadges += `<span class="rice-status-badge">مع الرز</span>`;
                   }
               }
 
@@ -1589,7 +1592,8 @@
               // 🔥 منطق البادج الجديد (أقل كمية) 🔥
               const isRamadan = catKey === 'ramadan' || catKey === 'وجبات رمضان';
               let minQtyBadge = '';
-              if (isRamadan) {
+              // 🔥 التعديل هنا: إظهار البادج فقط إذا كان الصنف "وجبة" وداخل قسم رمضان
+              if (isRamadan && isMeal) {
                   // البادج الجديد في منتصف الكارت من الأعلى
                   minQtyBadge = `<div class="min-qty-badge">أقل كمية 10 وجبات</div>`;
               }
@@ -1947,7 +1951,8 @@
           price: finalUnitPrice, 
           qty: qty, 
           category: category,
-          isWithoutAdditions: isWithoutAdditions
+          isWithoutAdditions: isWithoutAdditions,
+          isMeal: isMeal // 🔥 إضافة حالة الوجبة للسلة للتحقق لاحقاً
       };
       const existingItem = cartItems.find(i => i.title === cartItem.title && i.size === cartItem.size && i.rice === cartItem.rice && i.isWithoutAdditions === cartItem.isWithoutAdditions);
       if (existingItem) existingItem.qty += qty; else cartItems.push(cartItem);
@@ -2156,8 +2161,9 @@
       }
       
       // 🔥🔥 التحقق من كمية وجبات رمضان 🔥🔥
-      const ramadanItems = cartItems.filter(i => i.category === 'ramadan' || i.category === 'وجبات رمضان');
-      const totalRamadanQty = ramadanItems.reduce((sum, i) => sum + i.qty, 0);
+      // 🔥 التعديل هنا: يتم التحقق فقط من الأصناف التي هي "وجبات" داخل قسم رمضان
+      const ramadanMeals = cartItems.filter(i => (i.category === 'ramadan' || i.category === 'وجبات رمضان') && i.isMeal);
+      const totalRamadanQty = ramadanMeals.reduce((sum, i) => sum + i.qty, 0);
 
       if (totalRamadanQty > 0 && totalRamadanQty < 10) {
           return showNotification("عذراً، الطلب من قسم وجبات رمضان يتطلب 10 وجبات على الأقل (يمكنك التنويع بين وجبات رمضان المختلفة)", 'warning');
